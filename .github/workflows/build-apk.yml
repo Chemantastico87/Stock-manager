@@ -1,14 +1,50 @@
-name: Build
-on: workflow_dispatch
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-      - run: pip install flet
-      - run: flet build apk
-      - uses: actions/upload-artifact@v4
-        with:
-          name: app
-          path: build/apk/
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+        
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+      
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        
+    - name: Install Flet
+      run: |
+        pip install flet
+        pip install flet-cli
+        
+    - name: Build APK
+      run: |
+        python -m flet build apk --verbose
+      continue-on-error: false
+      
+    - name: Find APK
+      run: |
+        find . -name "*.apk" -print
+        ls -la build/ || true
+        ls -la dist/ || true
+        
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: stock-manager-apk
+        path: |
+          **/*.apk
+          !**/flutter/**/*.apk
