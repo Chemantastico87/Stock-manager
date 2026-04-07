@@ -1,4 +1,4 @@
-name: Build APK
+name: Build APK with Docker
 
 on:
   workflow_dispatch:
@@ -11,51 +11,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-          
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-          
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-        
-      - name: Install Flutter
+      - name: Build APK with Docker
         run: |
-          git clone https://github.com/flutter/flutter.git --depth 1 -b stable
-          echo "$GITHUB_WORKSPACE/flutter/bin" >> $GITHUB_PATH
-          
-      - name: Install Flet
-        run: |
-          pip install --upgrade pip
-          pip install flet
-          
-      - name: Create required files
-        run: |
-          mkdir -p assets
-          echo "Creando estructura de archivos..."
-          
-      - name: Build APK
-        run: |
-          flutter doctor
-          flet build apk --verbose
-          
-      - name: Find APK
-        run: |
-          echo "Buscando APK generado..."
-          find . -name "*.apk" 2>/dev/null || echo "No APK found"
-          ls -la build/ 2>/dev/null || echo "No build folder"
-          ls -la dist/ 2>/dev/null || echo "No dist folder"
-          
+          docker run --rm \
+            -v $(pwd):/project \
+            -w /project \
+            ghcr.io/flet-dev/flet:latest \
+            bash -c "pip install flet && flet build apk"
+            
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: stock-app
-          path: |
-            **/*.apk
-            !**/flutter/bin/cache/**
+          path: build/apk/*.apk
